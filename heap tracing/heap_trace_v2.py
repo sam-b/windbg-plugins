@@ -1,5 +1,7 @@
 import pykd
+from os.path import expanduser
 
+home = expanduser("~")
 return_reg = "rax"
 stack_pointer = "rsp"
 arch_bits = 64
@@ -99,7 +101,7 @@ class handle_realloc_heap(pykd.eventHandler):
 		log.write(self.out + hex(pykd.reg(return_reg)) + "\n")
 		return False
 
-log = open("C:\Users\sam\Desktop\log.log","w+")
+log = open(home + "\log.log","w+")
 		
 try:
 	pykd.reg("rax")
