@@ -31,10 +31,15 @@ class handle_allocate_heap(pykd.eventHandler):
 		
 	def enter_call_back(self,bp):
 		self.out = "RtlAllocateHeap(" 
-		esp = pykd.reg("esp")
-		self.out += hex(pykd.ptrPtr(esp + 4)) + " , "
-		self.out += hex(pykd.ptrMWord(esp + 0x8)) + " , "
-		self.out += hex(pykd.ptrMWord(esp + 0xC)) + ") = "
+		if arch_bits == 32:
+			esp = pykd.reg(stack_pointer)
+			self.out += hex(pykd.ptrPtr(esp + 4)) + " , "
+			self.out += hex(pykd.ptrMWord(esp + 0x8)) + " , "
+			self.out += hex(pykd.ptrMWord(esp + 0xC)) + ") = "
+		else:
+			self.out += hex(pykd.reg("rcx")) + " , "
+			self.out += hex(pykd.reg("rdx")) + " , " 
+			self.out += hex(pykd.reg("r8")) +  ") = "
 		if self.bp_end == None:
 			self.ret_addr = pykd.dbgCommand("dd esp L1").split()[1]
 			self.bp_end = pykd.setBp(int(self.ret_addr, 16), self.return_call_back)
@@ -58,10 +63,15 @@ class handle_free_heap(pykd.eventHandler):
 		
 	def enter_call_back(self,bp):
 		self.out = "RtlFreeHeap("
-		esp = pykd.reg("esp")
-		self.out += hex(pykd.ptrPtr(esp + 4)) + " , "
-		self.out += hex(pykd.ptrMWord(esp + 0x8)) + " , "
-		self.out += hex(pykd.ptrPtr(esp + 0xC)) + ") = "
+		if arch_bits == 32:
+			esp = pykd.reg(stack_pointer)
+			self.out += hex(pykd.ptrPtr(esp + 4)) + " , "
+			self.out += hex(pykd.ptrMWord(esp + 0x8)) + " , "
+			self.out += hex(pykd.ptrPtr(esp + 0xC)) + ") = "
+		else:
+			self.out += hex(pykd.reg("rcx")) + " , "
+			self.out += hex(pykd.reg("rdx")) + " , " 
+			self.out += hex(pykd.reg("r8")) + ") = "
 		if self.bp_end == None:
 			self.ret_addr = pykd.dbgCommand("dd esp L1").split()[1]
 			self.bp_end = pykd.setBp(int(self.ret_addr, 16), self.return_call_back)
@@ -87,11 +97,17 @@ class handle_realloc_heap(pykd.eventHandler):
 		
 	def enter_call_back(self,bp):
 		self.out = "RtlReAllocateHeap("
-		esp = pykd.reg("esp")
-		self.out += hex(pykd.ptrPtr(esp + 4)) + " , "
-		self.out += hex(pykd.ptrMWord(esp + 0x8)) + " , " 
-		self.out += hex(pykd.ptrPtr(esp + 0xC)) + " , " 
-		self.out += hex(pykd.ptrMWord(esp + 0x10)) + ") = "
+		if arch_bits == 32:
+			esp = pykd.reg(stack_pointer)
+			self.out += hex(pykd.ptrPtr(esp + 4)) + " , "
+			self.out += hex(pykd.ptrMWord(esp + 0x8)) + " , " 
+			self.out += hex(pykd.ptrPtr(esp + 0xC)) + " , " 
+			self.out += hex(pykd.ptrMWord(esp + 0x10)) + ") = "
+		else:
+			self.out += hex(pykd.reg("rcx")) + " , "
+			self.out += hex(pykd.reg("rdx")) + " , " 
+			self.out += hex(pykd.reg("r8")) + " , " 
+			self.out += hex(pykd.reg("r9")) + ") = "
 		if self.bp_end == None:
 			self.ret_addr = pykd.dbgCommand("dd esp L1").split()[1]
 			self.bp_end = pykd.setBp(int(self.ret_addr, 16), self.return_call_back)
