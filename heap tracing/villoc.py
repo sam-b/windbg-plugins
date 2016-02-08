@@ -491,9 +491,9 @@ if __name__ == '__main__':
                         help="size of malloc metadata before user data")
     parser.add_argument("--footer", type=int, default=0,
                         help="size of malloc metadata after user data")
-    parser.add_argument("--round", type=int, default=0x10,
+    parser.add_argument("--round", type=int, default=0x08,
                         help="size of malloc chunks are a multiple of this value")
-    parser.add_argument("--minsz", type=int, default=0x20,
+    parser.add_argument("--minsz", type=int, default=0x08,
                         help="size of a malloc chunk is at least this value")
     parser.add_argument("--raw", action="store_true",
                         help="disables header, footer, round and minsz")
