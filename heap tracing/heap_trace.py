@@ -78,7 +78,9 @@ class handle_free_heap(pykd.eventHandler):
 		return False
 		
 	def return_call_back(self,bp):
-		log.write(self.out + hex(pykd.reg(return_reg)) + "\n")
+		#returns a BOOLEAN which is a byte under the hood
+		ret_val = hex(pykd.reg("al"))
+		log.write(self.out + ret_val + "\n")
 		return False
 
 #RtlReAllocateHeap(
