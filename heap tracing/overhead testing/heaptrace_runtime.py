@@ -2,13 +2,12 @@ import pykd
 from os.path import expanduser
 import timeit
 
-start = timeit.default_timer()
-
 home = expanduser("~")
 return_reg = "rax"
 stack_pointer = "rsp"
 arch_bits = 64
 log = None
+
 def get_address(localAddr):
 	res = pykd.dbgCommand("x " + localAddr)
 	result_count = res.count("\n")
@@ -29,6 +28,7 @@ class start(pykd.eventHandler):
 		handle_free_heap()
 		handle_realloc_heap()
 		self.bp_init = pykd.setBp(int(addr, 16), self.enter_call_back)
+
 	def enter_call_back(self,bp):
 		end = timeit.default_timer()
 		print "Heap spray took: " + str(end - self.start)

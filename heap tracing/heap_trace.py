@@ -6,6 +6,7 @@ return_reg = "rax"
 stack_pointer = "rsp"
 arch_bits = 64
 log = None
+
 def get_address(localAddr):
 	res = pykd.dbgCommand("x " + localAddr)
 	result_count = res.count("\n")
@@ -15,7 +16,6 @@ def get_address(localAddr):
 	if result_count > 1:
 		print "[-] Warning, more than one result for", localAddr	
 	return res.split()[0]
-	
 	
 #RtlAllocateHeap(
 # IN PVOID                HeapHandle,
@@ -41,7 +41,11 @@ class handle_allocate_heap(pykd.eventHandler):
 			self.out += hex(pykd.reg("rdx")) + " , " 
 			self.out += hex(pykd.reg("r8")) +  ") = "
 		if self.bp_end == None:
-			self.ret_addr = pykd.dbgCommand("dd esp L1").split()[1]
+			disas = pykd.dbgCommand("uf ntdll!RtlAllocateHeap").split('\n')
+			for i in disas:
+				if 'ret' in i:
+					self.ret_addr = i.split()[0]
+					break
 			self.bp_end = pykd.setBp(int(self.ret_addr, 16), self.return_call_back)
 		return False
 	
@@ -70,10 +74,14 @@ class handle_free_heap(pykd.eventHandler):
 			self.out += hex(pykd.ptrPtr(esp + 0xC)) + ") = "
 		else:
 			self.out += hex(pykd.reg("rcx")) + " , "
-			self.out += hex(pykd.reg("rdx")) + " , " 
+			self.out += hex(pykd.reg("rdx")) + " , "
 			self.out += hex(pykd.reg("r8")) + ") = "
 		if self.bp_end == None:
-			self.ret_addr = pykd.dbgCommand("dd esp L1").split()[1]
+			disas = pykd.dbgCommand("uf ntdll!RtlFreeHeap").split('\n')
+			for i in disas:
+				if 'ret' in i:
+					self.ret_addr = i.split()[0]
+					break
 			self.bp_end = pykd.setBp(int(self.ret_addr, 16), self.return_call_back)
 		return False
 		
@@ -111,7 +119,11 @@ class handle_realloc_heap(pykd.eventHandler):
 			self.out += hex(pykd.reg("r8")) + " , " 
 			self.out += hex(pykd.reg("r9")) + ") = "
 		if self.bp_end == None:
-			self.ret_addr = pykd.dbgCommand("dd esp L1").split()[1]
+			disas = pykd.dbgCommand("uf ntdll!RtlReAllocateHeap").split('\n')
+			for i in disas:
+				if 'ret' in i:
+					self.ret_addr = i.split()[0]
+					break
 			self.bp_end = pykd.setBp(int(self.ret_addr, 16), self.return_call_back)
 		return False
 		
@@ -127,7 +139,7 @@ except:
 	arch_bits = 32
 	return_reg = "eax"
 	stack_pointer = "esp"
-
+	
 handle_allocate_heap()
 handle_free_heap()
 handle_realloc_heap()
