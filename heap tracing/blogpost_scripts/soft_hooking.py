@@ -21,7 +21,11 @@ class handle_allocate_heap(pykd.eventHandler):
 	def enter_call_back(self,bp):
 		print "RtlAllocateHeap called." 
 		if self.bp_end == None:
-			self.ret_addr = pykd.dbgCommand("dd esp L1").split()[1]
+			disas = pykd.dbgCommand("uf ntdll!RtlAllocateHeap").split('\n')
+			for i in disas:
+				if 'ret' in i:
+					self.ret_addr = i.split()[0]
+					break
 			self.bp_end = pykd.setBp(int(self.ret_addr, 16), self.return_call_back)
 		return False
 	
