@@ -4,7 +4,6 @@
 import re
 import random
 import codecs
-import timeit
 
 html_escape_table = {
     "&": "&amp;",
@@ -99,31 +98,22 @@ class Block(Printable):
         self.details = True
         self.error = error
         self.tmp = tmp
-        self.start_addr = None
         self.end_addr = None
-        self.more_html_store = None
+        self.start_addr = None
 
     def start(self):
         if not self.start_addr:
             self.start_addr = self.uaddr - self.header
-            self.start = self.start_saved
         return self.start_addr
 
-    def start_saved(self):
-        return self.start_addr	
-	
     def end(self):
         if not self.end_addr:
             size = max(self.minsz, self.usize + self.header + self.footer)
             rsize = size + (self.round - 1)
             rsize = rsize - (rsize % self.round)
             self.end_addr = self.uaddr - self.header + rsize
-            self.end = self.end_saved
         return self.end_addr
 
-    def end_saved(self):
-        return self.end_addr
-		
     def gen_html(self, out, width):
 
         if self.color:
@@ -139,9 +129,7 @@ class Block(Printable):
         Printable.gen_html(self,out, width, color)
 
     def more_html(self):
-        if not self.more_html_store:
-            self.more_html_store = "+ %#x (%#x)" % (self.end() - self.start(), self.usize)
-        return self.more_html_store
+        return "+ %#x (%#x)" % (self.end() - self.start(), self.usize)
 
     def __repr__(self):
         return "%s(start=%#x, end=%#x, tmp=%s)" % (
@@ -234,13 +222,11 @@ def sanitize(x):
 
 def parse_ltrace(ltrace):
 
-    match_call = re.compile(r"^([a-zA-Z_]+)\((.*)\) += (.*)")
-    match_err = re.compile(r"^([a-zA-Z_]+)\((.*) <no return \.\.\.>")
-    i = 0
+    match_call = r"^([a-zA-Z_]+)\((.*)\) += (.*)"
+    match_err = r"^([a-zA-Z_]+)\((.*) <no return \.\.\.>"
+
     for line in ltrace:
-        if i % 1000 == 0:
-            print "Line: " + str(i)
-        i+= 1
+
         # if the trace file contains PID (for ltrace -f)
         head, _, tail = line.partition(" ")
         if head.isdigit():
@@ -250,18 +236,18 @@ def parse_ltrace(ltrace):
             continue
 
         try:
-            func, args, ret = match_call.findall(line)[0]
+            func, args, ret = re.findall(match_call, line)[0]
         except Exception:
 
             try:
                 # maybe this stopped the program
-                func, args = match_err.findall(line)[0]
+                func, args = re.findall(match_err, line)[0]
                 ret = None
             except Exception:
                 print("ignoring line: %s" % line)
                 continue
 
-        args = map(sanitize, args.split(", "))
+        args = list(map(sanitize, args.split(", ")))
         ret = sanitize(ret)
 
         yield func, args, ret
@@ -279,8 +265,7 @@ def build_timeline(events):
         except KeyError:
             continue
 
-        state = State(filter(lambda x: not x.tmp, timeline[-1]))
-        #state = State(b for b in timeline[-1] if not b.tmp)
+        state = State(b for b in timeline[-1] if not b.tmp)
 
         call = "%s(%s)" % (func, ", ".join("%#x" % a for a in args))
 
@@ -307,14 +292,14 @@ def random_color(r=200, g=200, b=125):
 
 def print_state(out, boundaries, state):
 
-    out.write('<div class="state %s">' % ("error" if state.errors else ""))
+    out.write('<div class="state %s">\n' % ("error" if state.errors else ""))
 
     known_stops = set()
 
     todo = {x.start():x for x in state}
     while todo:
 
-        out.write('<div class="line" style="">')
+        out.write('<div class="line" style="">\n')
 
         done = set()
 
@@ -345,7 +330,7 @@ def print_state(out, boundaries, state):
 
                 # We want to show from previous known_stop.
 
-                for s in xrange(i+1,last,-1):
+                for s in reversed(range(last, i+1)):
                     if s in known_stops:
                         break
 
@@ -367,7 +352,8 @@ def print_state(out, boundaries, state):
         if not done:
             raise RuntimeError("Some block(s) don't match boundaries.")
 
-        out.write('</div>')
+        out.write('</div>\n')
+
         todo = {x.start():x for x in todo.values() if x not in done}
 
     out.write('<div class="log">')
@@ -378,7 +364,9 @@ def print_state(out, boundaries, state):
     for msg in state.errors:
         out.write('<p>%s</p>' % html_escape(str(msg)))
 
-    out.write('</div></div>')
+    out.write('</div>\n')
+
+    out.write('</div>\n')
 
 
 def gen_html(timeline, boundaries, out):
@@ -499,8 +487,7 @@ if __name__ == '__main__':
 
     import sys
     import argparse
-    sys.setcheckinterval(10000)
-    start = timeit.default_timer()
+
     parser = argparse.ArgumentParser()
     parser.add_argument("ltrace", type=argparse.FileType("rb"))
     parser.add_argument("out", type=argparse.FileType("w",50000000))
@@ -538,4 +525,3 @@ if __name__ == '__main__':
 
     gen_html(timeline, boundaries, args.out)
     args.out.close()
-    print timeit.default_timer() - start
